@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Importe useCallback
 import Dashboard from './components/Dashboard/Dashboard';
 import Informations from './components/Informations/Informations';
 import Assets from './components/Assets/Assets';
@@ -7,32 +7,40 @@ import './App.css';
 
 function App() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // Estados para guardar os dados do sumário e controlar o carregamento
     const [summaryData, setSummaryData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // useEffect com array vazio [] executa apenas uma vez, quando o componente é montado
-    useEffect(() => {
-        const fetchSummaryData = async () => {
-            try {
-                // Faz a chamada à sua API
-                const response = await fetch('/api/portfolio/summary');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                setSummaryData(data); // Guarda os dados no estado
-            } catch (e) {
-                setError(e.message); // Guarda a mensagem de erro
-                console.error("Falha ao buscar dados do sumário:", e);
-            } finally {
-                setIsLoading(false); // Finaliza o estado de carregamento
+    // Envolvemos a lógica de busca de dados em uma função que pode ser reutilizada
+    // useCallback garante que a função não seja recriada a cada renderização
+    const fetchSummaryData = useCallback(async () => {
+        setIsLoading(true); // Mostra o "Carregando..."
+        try {
+            const response = await fetch('http://localhost:8080/api/portfolio/summary');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
+            const data = await response.json();
+            setSummaryData(data);
+        } catch (e) {
+            setError(e.message);
+            console.error("Falha ao buscar dados do sumário:", e);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []); // O array vazio significa que a função nunca muda
 
+    // Busca os dados na primeira vez que a página carrega
+    useEffect(() => {
         fetchSummaryData();
-    }, []);
+    }, [fetchSummaryData]);
+
+    // Esta função será chamada pelo modal após uma transação bem-sucedida
+    const handleTransactionSuccess = () => {
+        console.log("Transação bem-sucedida! Atualizando os dados...");
+        fetchSummaryData(); // Re-busca os dados do sumário para atualizar a tela
+        // No futuro, você também pode querer re-buscar a lista de ativos aqui
+    };
 
     return (
         <div className="app-container">
@@ -41,12 +49,16 @@ function App() {
                 <button className="add-button" onClick={() => setIsModalOpen(true)}>Adicionar Ativo</button>
             </header>
             <main>
-                {/* Passa os dados e o estado de carregamento para o componente filho */}
                 <Informations summaryData={summaryData} isLoading={isLoading} />
                 <Dashboard />
                 <Assets />
             </main>
-            <AddAssetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            {/* Passamos as novas props para o modal */}
+            <AddAssetModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                onTransactionSuccess={handleTransactionSuccess}
+            />
         </div>
     );
 }
