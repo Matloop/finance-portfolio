@@ -29,3 +29,9 @@
     border: 1px solid #dddfe2;
     border-radius: 6px;
 }
+
+.error-message {
+    color: #dc3545;
+    text-align: center;
+    padding: 20px;
+}
