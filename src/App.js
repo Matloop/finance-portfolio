@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Importe useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import Dashboard from './components/Dashboard/Dashboard';
 import Informations from './components/Informations/Informations';
 import Assets from './components/Assets/Assets';
 import AddAssetModal from './components/AddAssetModal/AddAssetModal';
+import { API_BASE_URL } from './apiConfig'; // Assumindo que você criou este arquivo
 import './App.css';
 
 function App() {
@@ -10,13 +11,16 @@ function App() {
     const [summaryData, setSummaryData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    // Novo estado para controlar o loading do botão de refresh
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Envolvemos a lógica de busca de dados em uma função que pode ser reutilizada
-    // useCallback garante que a função não seja recriada a cada renderização
     const fetchSummaryData = useCallback(async () => {
-        setIsLoading(true); // Mostra o "Carregando..."
+        // Não mostra o "Carregando..." principal durante um refresh
+        if (!isRefreshing) {
+            setIsLoading(true);
+        }
         try {
-            const response = await fetch('http://localhost:8080/api/portfolio/summary');
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/summary`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -28,32 +32,69 @@ function App() {
         } finally {
             setIsLoading(false);
         }
-    }, []); // O array vazio significa que a função nunca muda
+    }, [isRefreshing]); // Adicionamos isRefreshing como dependência
 
-    // Busca os dados na primeira vez que a página carrega
     useEffect(() => {
         fetchSummaryData();
     }, [fetchSummaryData]);
 
-    // Esta função será chamada pelo modal após uma transação bem-sucedida
     const handleTransactionSuccess = () => {
         console.log("Transação bem-sucedida! Atualizando os dados...");
-        fetchSummaryData(); // Re-busca os dados do sumário para atualizar a tela
-        // No futuro, você também pode querer re-buscar a lista de ativos aqui
+        fetchSummaryData();
+    };
+
+    // Nova função para lidar com o clique no botão de refresh
+    const handleRefreshAssets = async () => {
+        setIsRefreshing(true); // Desabilita o botão e mostra o texto "Atualizando..."
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao solicitar a atualização no backend.');
+            }
+
+            console.log('Solicitação de refresh enviada. Atualizando dados em 2 segundos...');
+            
+            // Damos um tempo para o backend processar antes de buscar os novos dados
+            setTimeout(() => {
+                fetchSummaryData();
+                // No futuro, você também pode querer atualizar a lista detalhada de ativos aqui
+                setIsRefreshing(false); // Reabilita o botão
+            }, 2000);
+
+        } catch (err) {
+            console.error('Erro ao atualizar cotações:', err);
+            alert('Não foi possível atualizar as cotações. Tente novamente.');
+            setIsRefreshing(false); // Reabilita o botão em caso de erro
+        }
     };
 
     return (
         <div className="app-container">
             <header className="app-header">
                 <h1>Minha Carteira</h1>
-                <button className="add-button" onClick={() => setIsModalOpen(true)}>Adicionar Ativo</button>
+                {/* Agrupamos os botões para facilitar o layout */}
+                <div className="header-actions">
+                    <button 
+                        className="refresh-button" 
+                        onClick={handleRefreshAssets} 
+                        disabled={isRefreshing || isLoading}
+                    >
+                        {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                    </button>
+                    <button className="add-button" onClick={() => setIsModalOpen(true)}>
+                        Adicionar Ativo
+                    </button>
+                </div>
             </header>
             <main>
                 <Informations summaryData={summaryData} isLoading={isLoading} />
                 <Dashboard />
                 <Assets />
             </main>
-            {/* Passamos as novas props para o modal */}
             <AddAssetModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 

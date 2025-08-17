@@ -17,8 +17,14 @@ body {
     margin-bottom: 20px;
 }
 
+/* Novo container para os botões */
+.header-actions {
+    display: flex;
+    gap: 15px; /* Espaçamento entre os botões */
+}
+
 .add-button {
-    background-color: #27ae60;
+    background-color: #27ae60; /* Verde */
     color: white;
     padding: 10px 20px;
     border: none;
@@ -26,4 +32,23 @@ body {
     cursor: pointer;
     font-size: 1rem;
     font-weight: bold;
+}
+
+/* Novo estilo para o botão de refresh */
+.refresh-button {
+    background-color: #3498db; /* Azul */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Estilo para quando os botões estiverem desabilitados */
+.refresh-button:disabled,
+.add-button:disabled {
+    background-color: #95a5a6; /* Cinza */
+    cursor: not-allowed;
 }
