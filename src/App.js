@@ -62,7 +62,8 @@ function App() {
             setTimeout(() => {
                 fetchSummaryData();
                 // No futuro, você também pode querer atualizar a lista detalhada de ativos aqui
-                setIsRefreshing(false); // Reabilita o botão
+                setIsRefreshing(false);
+                window.location.reload(true); // Reabilita o botão
             }, 2000);
 
         } catch (err) {
@@ -84,6 +85,7 @@ function App() {
                         disabled={isRefreshing || isLoading}
                     >
                         {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                        
                     </button>
                     <button className="add-button" onClick={() => setIsModalOpen(true)}>
                         Adicionar Ativo
