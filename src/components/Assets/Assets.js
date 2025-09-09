@@ -1,38 +1,34 @@
 // --- components/Assets/Assets.js ---
 import React, { useState, useEffect } from 'react';
-import './assets.css'; // O CSS que fornecemos anteriormente está correto
+import './assets.css';
 
-// --- FUNÇÕES AUXILIARES (sem alterações) ---
-const formatCurrency = (value = 0) => 
-    `R$ ${Number(value).toLocaleString('pt-BR', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-    })}`;
+// --- FUNÇÕES AUXILIARES ---
 
-const formatQuantity = (qty = 0) => 
-    Number(qty).toLocaleString('pt-BR', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 8 
-    });
+const formatCurrency = (value = 0) =>
+    Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const formatQuantity = (qty = 0) =>
+    Number(qty).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+
+const formatPercentage = (value = 0) => `${Number(value).toFixed(2)}%`;
 
 const getFriendlyName = (key) => {
     const nameMap = {
-        'brasil': 'Brasil',
-        'eua': 'EUA',
-        'cripto': 'Cripto',
-        'ações': 'Ações',
-        'etfs': 'ETFs',
-        'renda fixa': 'Renda Fixa',
+        'brasil': 'Brasil', 'eua': 'EUA', 'cripto': 'Cripto',
+        'ações': 'Ações', 'etfs': 'ETFs', 'renda fixa': 'Renda Fixa',
         'criptomoedas': 'Criptomoedas'
     };
     return nameMap[key.toLowerCase()] || key;
 };
 
 
-// --- COMPONENTES REUTILIZÁVEIS (sem alterações) ---
-const Accordion = ({ title, totalValue, children, defaultOpen = false }) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+// --- COMPONENTES REUTILIZÁVEIS ---
 
+/**
+ * Componente Accordion. Mostra o valor total da subcategoria.
+ */
+const Accordion = ({ title, totalValue, children, defaultOpen = true }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
         <div className="asset-accordion">
             <div className="accordion-header" onClick={() => setIsOpen(!isOpen)}>
@@ -47,19 +43,42 @@ const Accordion = ({ title, totalValue, children, defaultOpen = false }) => {
     );
 };
 
-const AssetItem = ({ asset }) => {
-    const displayName = asset.ticker || asset.name;
-    const displayQuantity = asset.totalQuantity ? ` (${formatQuantity(asset.totalQuantity)})` : '';
-    return (
-        <div className="asset-item">
-            <p>{displayName}{displayQuantity}</p>
-            <p>{formatCurrency(asset.currentValue)}</p>
-        </div>
-    );
-};
+/**
+ * Componente Tabela de Ativos. Renderiza o cabeçalho e as linhas.
+ */
+const AssetsTable = ({ assets }) => (
+    <table className="assets-table">
+        <thead>
+            <tr>
+                <th>Ativo</th>
+                <th className="align-right">Preço Médio</th>
+                <th className="align-right">Preço Atual</th>
+                <th className="align-right">Variação</th>
+                <th className="align-right">% da Carteira</th>
+                <th className="align-right">Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {assets.map((asset, index) => (
+                <tr key={`${asset.ticker || asset.name}-${index}`}>
+                    <td>
+                        <div className="asset-name">{asset.ticker || asset.name}</div>
+                        <div className="asset-quantity">{formatQuantity(asset.totalQuantity)}</div>
+                    </td>
+                    <td className="align-right">{formatCurrency(asset.averagePrice)}</td>
+                    <td className="align-right">{formatCurrency(asset.currentPrice)}</td>
+                    <td className={`align-right ${asset.profitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                        {formatPercentage(asset.profitability)}
+                    </td>
+                    <td className="align-right">{formatPercentage(asset.portfolioPercentage)}</td>
+                    <td className="align-right">{formatCurrency(asset.currentValue)}</td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+);
 
-
-// --- COMPONENTE PRINCIPAL (COM A CORREÇÃO) ---
+// --- COMPONENTE PRINCIPAL ---
 const Assets = ({ assetsData, isLoading }) => {
     const [activeTab, setActiveTab] = useState(null);
 
@@ -73,26 +92,15 @@ const Assets = ({ assetsData, isLoading }) => {
     }, [assetsData, activeTab]);
 
     if (isLoading) {
-        return (
-            <div className="assets-container card">
-                <h2>Meus Ativos</h2>
-                <p>Carregando ativos...</p>
-            </div>
-        );
+        return <div className="assets-container card"><h2>Meus Ativos</h2><p>Carregando ativos...</p></div>;
     }
 
     if (!assetsData || !activeTab || Object.keys(assetsData).length === 0) {
-        return (
-            <div className="assets-container card">
-                <h2>Meus Ativos</h2>
-                <p>Nenhum ativo na carteira para exibir.</p>
-            </div>
-        );
+        return <div className="assets-container card"><h2>Meus Ativos</h2><p>Nenhum ativo na carteira para exibir.</p></div>;
     }
 
     const tabKeys = Object.keys(assetsData);
-    // activeTabData agora é uma LISTA de objetos de subcategoria
-    const activeTabData = assetsData[activeTab] || []; 
+    const activeTabData = assetsData[activeTab] || [];
 
     return (
         <div className="assets-container card">
@@ -111,20 +119,15 @@ const Assets = ({ assetsData, isLoading }) => {
             </div>
 
             <div className="tab-content">
-                {/* ***** CORREÇÃO PRINCIPAL APLICADA AQUI ***** */}
-                {/* Agora iteramos sobre a LISTA de subcategorias */}
                 {activeTabData.length > 0 ? (
                     activeTabData.map((subCategory) => (
                         <Accordion
                             key={subCategory.categoryName}
                             title={subCategory.categoryName}
                             totalValue={subCategory.totalValue}
-                            defaultOpen={true}
                         >
                             {subCategory.assets && subCategory.assets.length > 0 ? (
-                                subCategory.assets.map((asset, index) => (
-                                    <AssetItem key={`${asset.ticker || asset.name}-${index}`} asset={asset} />
-                                ))
+                                <AssetsTable assets={subCategory.assets} />
                             ) : (
                                 <p className="no-assets-message">Nenhum ativo nesta categoria.</p>
                             )}

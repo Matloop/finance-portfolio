@@ -127,3 +127,52 @@
     color: #6c757d;
     font-style: italic;
 }
+/* Adicione estas classes ao final do seu assets.css */
+
+.accordion-content .assets-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.assets-table th, .assets-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.assets-table th {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.assets-table td {
+    font-size: 0.95rem;
+    color: #343a40;
+}
+
+.assets-table .asset-name {
+    font-weight: 500;
+}
+
+.assets-table .asset-quantity {
+    font-size: 0.85rem;
+    color: #6c757d;
+    display: block; /* Faz a quantidade ficar abaixo do nome */
+}
+
+/* Alinhamento de colunas numéricas */
+.assets-table .align-right {
+    text-align: right;
+}
+
+/* Estilo para a rentabilidade */
+.profit-positive {
+    color: #28a745; /* Verde */
+}
+
+.profit-negative {
+    color: #dc3545; /* Vermelho */
+}
