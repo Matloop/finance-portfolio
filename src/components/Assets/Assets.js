@@ -4,14 +4,18 @@ import './assets.css';
 
 // --- FUNÇÕES AUXILIARES ---
 
+// Formata um número para o padrão de moeda brasileiro (R$)
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+// Formata a quantidade, permitindo mais casas decimais para cripto
 const formatQuantity = (qty = 0) =>
     Number(qty).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
 
+// Formata um número para porcentagem com duas casas decimais
 const formatPercentage = (value = 0) => `${Number(value).toFixed(2)}%`;
 
+// Mapeia chaves da API para nomes amigáveis na UI
 const getFriendlyName = (key) => {
     const nameMap = {
         'brasil': 'Brasil', 'eua': 'EUA', 'cripto': 'Cripto',
@@ -44,39 +48,76 @@ const Accordion = ({ title, totalValue, children, defaultOpen = true }) => {
 };
 
 /**
- * Componente Tabela de Ativos. Renderiza o cabeçalho e as linhas.
+ * Componente Tabela de Ativos. Renderiza o cabeçalho e as linhas de forma condicional.
+ * @param {object} props
+ * @param {Array} props.assets - A lista de ativos a serem renderizados.
+ * @param {boolean} props.isFixedIncome - Flag para indicar se é uma tabela de Renda Fixa.
  */
-const AssetsTable = ({ assets }) => (
-    <table className="assets-table">
-        <thead>
-            <tr>
-                <th>Ativo</th>
-                <th className="align-right">Preço Médio</th>
-                <th className="align-right">Preço Atual</th>
-                <th className="align-right">Variação</th>
-                <th className="align-right">% da Carteira</th>
-                <th className="align-right">Valor Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {assets.map((asset, index) => (
-                <tr key={`${asset.ticker || asset.name}-${index}`}>
-                    <td>
-                        <div className="asset-name">{asset.ticker || asset.name}</div>
-                        <div className="asset-quantity">{formatQuantity(asset.totalQuantity)}</div>
-                    </td>
-                    <td className="align-right">{formatCurrency(asset.averagePrice)}</td>
-                    <td className="align-right">{formatCurrency(asset.currentPrice)}</td>
-                    <td className={`align-right ${asset.profitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-                        {formatPercentage(asset.profitability)}
-                    </td>
-                    <td className="align-right">{formatPercentage(asset.portfolioPercentage)}</td>
-                    <td className="align-right">{formatCurrency(asset.currentValue)}</td>
+const AssetsTable = ({ assets, isFixedIncome = false }) => {
+    // Se for Renda Fixa, renderizamos uma tabela simplificada.
+    if (isFixedIncome) {
+        return (
+            <table className="assets-table">
+                <thead>
+                    <tr>
+                        <th>Ativo</th>
+                        <th className="align-right">Variação</th>
+                        <th className="align-right">% da Carteira</th>
+                        <th className="align-right">Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {assets.map((asset, index) => (
+                        <tr key={`${asset.name}-${index}`}>
+                            <td>
+                                <div className="asset-name">{asset.name}</div>
+                            </td>
+                            <td className={`align-right ${asset.profitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                                {formatPercentage(asset.profitability)}
+                            </td>
+                            <td className="align-right">{formatPercentage(asset.portfolioPercentage)}</td>
+                            <td className="align-right">{formatCurrency(asset.currentValue)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        );
+    }
+
+    // Caso contrário, renderizamos a tabela completa para Ações, ETFs, Cripto, etc.
+    return (
+        <table className="assets-table">
+            <thead>
+                <tr>
+                    <th>Ativo</th>
+                    <th className="align-right">Preço Médio</th>
+                    <th className="align-right">Preço Atual</th>
+                    <th className="align-right">Variação</th>
+                    <th className="align-right">% da Carteira</th>
+                    <th className="align-right">Valor Total</th>
                 </tr>
-            ))}
-        </tbody>
-    </table>
-);
+            </thead>
+            <tbody>
+                {assets.map((asset, index) => (
+                    <tr key={`${asset.ticker || asset.name}-${index}`}>
+                        <td>
+                            <div className="asset-name">{asset.ticker}</div>
+                            <div className="asset-quantity">{formatQuantity(asset.totalQuantity)}</div>
+                        </td>
+                        <td className="align-right">{formatCurrency(asset.averagePrice)}</td>
+                        <td className="align-right">{formatCurrency(asset.currentPrice)}</td>
+                        <td className={`align-right ${asset.profitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                            {formatPercentage(asset.profitability)}
+                        </td>
+                        <td className="align-right">{formatPercentage(asset.portfolioPercentage)}</td>
+                        <td className="align-right">{formatCurrency(asset.currentValue)}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+};
+
 
 // --- COMPONENTE PRINCIPAL ---
 const Assets = ({ assetsData, isLoading }) => {
@@ -92,11 +133,21 @@ const Assets = ({ assetsData, isLoading }) => {
     }, [assetsData, activeTab]);
 
     if (isLoading) {
-        return <div className="assets-container card"><h2>Meus Ativos</h2><p>Carregando ativos...</p></div>;
+        return (
+            <div className="assets-container card">
+                <h2>Meus Ativos</h2>
+                <p>Carregando ativos...</p>
+            </div>
+        );
     }
 
     if (!assetsData || !activeTab || Object.keys(assetsData).length === 0) {
-        return <div className="assets-container card"><h2>Meus Ativos</h2><p>Nenhum ativo na carteira para exibir.</p></div>;
+        return (
+            <div className="assets-container card">
+                <h2>Meus Ativos</h2>
+                <p>Nenhum ativo na carteira para exibir.</p>
+            </div>
+        );
     }
 
     const tabKeys = Object.keys(assetsData);
@@ -127,7 +178,10 @@ const Assets = ({ assetsData, isLoading }) => {
                             totalValue={subCategory.totalValue}
                         >
                             {subCategory.assets && subCategory.assets.length > 0 ? (
-                                <AssetsTable assets={subCategory.assets} />
+                                <AssetsTable 
+                                    assets={subCategory.assets} 
+                                    isFixedIncome={subCategory.categoryName.toLowerCase() === 'renda fixa'}
+                                />
                             ) : (
                                 <p className="no-assets-message">Nenhum ativo nesta categoria.</p>
                             )}

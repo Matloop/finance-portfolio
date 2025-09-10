@@ -1,4 +1,4 @@
-// --- START OF FILE components/AddAssetModal/AddAssetModal.js ---
+// --- components/AddAssetModal/AddAssetModal.js ---
 import React, { useState } from 'react';
 import './addAssetModal.css';
 import { API_BASE_URL } from '../../apiConfig';
@@ -80,12 +80,10 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     return;
                 }
 
-                // MUDANÇA CRÍTICA: O campo 'market' agora é enviado explicitamente.
-                // Se for cripto, ele será enviado como `null`, o que é o correto.
                 const payload = {
                     ticker: ticker.toUpperCase(),
                     assetType,
-                    market: market, // O campo é sempre incluído no JSON
+                    market: market,
                     transactionType: activeTab.toUpperCase(),
                     quantity: parseFloat(quantity),
                     pricePerUnit: parseFloat(pricePerUnit),
@@ -105,19 +103,32 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                 }
 
             } else if (activeTab === 'fixedIncome') {
-                if (!fiName || !fiPurchaseDate || !fiInitialValue || !fiMaturityDate || !fiIndexerRate) {
+                // CORREÇÃO 1: Validação de 'fiIndexerRate' foi removida
+                if (!fiName || !fiPurchaseDate || !fiInitialValue || !fiMaturityDate) {
                     setError('Por favor, preencha todos os campos obrigatórios para Renda Fixa.');
-                    setIsLoading(false); return;
+                    setIsLoading(false); 
+                    return;
                 }
+
+                // CORREÇÃO 2: Trata o valor opcional. Se estiver vazio, envia null.
+                const contractedRateValue = fiIndexerRate ? parseFloat(fiIndexerRate) : null;
+
                 const fixedIncomePayload = {
-                    name: fiName, investedAmount: parseFloat(fiInitialValue), investmentDate: fiPurchaseDate,
-                    isDailyLiquid: fiDailyLiquidity, maturityDate: fiMaturityDate, indexType: fiIndexer,
-                    contractedRate: parseFloat(fiIndexerRate),
+                    name: fiName, 
+                    investedAmount: parseFloat(fiInitialValue), 
+                    investmentDate: fiPurchaseDate,
+                    isDailyLiquid: fiDailyLiquidity, 
+                    maturityDate: fiMaturityDate, 
+                    indexType: fiIndexer,
+                    contractedRate: contractedRateValue, // Envia o valor tratado
                 };
+                
                 const response = await fetch(`${API_BASE_URL}/api/fixed-income`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(fixedIncomePayload),
                 });
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
                     throw new Error(errorData.message || `Erro: ${response.statusText}`);
@@ -179,7 +190,6 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                         </>
                     )}
 
-                    {/* ADICIONADO DE VOLTA: Formulário de Renda Fixa */}
                     {activeTab === 'fixedIncome' && (
                         <>
                             <div className="form-group">
@@ -196,7 +206,8 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                 </select>
                             </div>
                              <div className="form-group">
-                                <label htmlFor="fi-indexer-rate">Taxa Contratada (%)</label>
+                                {/* CORREÇÃO 3: Rótulo atualizado para indicar que é opcional */}
+                                <label htmlFor="fi-indexer-rate">Taxa Contratada (%) (Opcional)</label>
                                 <input type="number" id="fi-indexer-rate" step="any" placeholder="Ex: 110 para 110% do CDI" value={fiIndexerRate} onChange={(e) => setFiIndexerRate(e.target.value)} />
                             </div>
                             <div className="form-group">
